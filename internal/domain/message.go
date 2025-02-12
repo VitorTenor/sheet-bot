@@ -21,6 +21,14 @@ const (
 	regex        = `^-?\d+\s\/\s.+(?:\s\d+)?$`
 )
 
+func (m *Message) CheckIfIsSystemMessage() bool {
+	if m.Message == "" {
+		return false
+	}
+
+	return strings.HasPrefix(m.Message, SystemMessagePrefix)
+}
+
 func (m *Message) Normalize() {
 	if !m.CheckMessage() {
 		m.Message = strings.ToLower(m.Message)

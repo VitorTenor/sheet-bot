@@ -7,16 +7,22 @@ import (
 )
 
 type MessageService struct {
+	context      context.Context
 	sheetService *GoogleSheetsService
 }
 
-func NewMessageService(gss *GoogleSheetsService) *MessageService {
+func NewMessageService(ctx context.Context, gss *GoogleSheetsService) *MessageService {
 	return &MessageService{
+		context:      ctx,
 		sheetService: gss,
 	}
 }
 
-func (ms *MessageService) ProcessAndReply(_ context.Context, message *domain.Message) *domain.Message {
+func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Message {
+	if message.CheckIfIsSystemMessage() {
+		return nil
+	}
+
 	message.Normalize()
 
 	if message.CheckMessage() {

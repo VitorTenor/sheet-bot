@@ -55,6 +55,7 @@ func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, e
 	if err != nil {
 		return nil, err
 	}
+
 	browserContext, err := pw.Chromium.LaunchPersistentContext(userDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
 		Headless: playwright.Bool(false),
 	})
@@ -70,16 +71,19 @@ func (wcs *WhatsAppCrawlerService) openWhatsAppPage(browser playwright.BrowserCo
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = page.Goto(whatsappURL, playwright.PageGotoOptions{
 		WaitUntil: (*playwright.WaitUntilState)(playwright.String("networkidle")),
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	_, err = page.WaitForSelector(".x1qlqyl8")
 	if err != nil {
 		return nil, err
 	}
+
 	return page, nil
 }
 
@@ -88,11 +92,35 @@ func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
 	if err != nil {
 		return err
 	}
+
 	if err := sheetBot.Click(); err != nil {
 		return err
 	}
+
 	_, err = page.WaitForSelector(".x10l6tqk")
 	return err
+}
+
+func (wcs *WhatsAppCrawlerService) checkMessages(page playwright.Page) {
+	for {
+		if err := wcs.handleMessages(page); err != nil {
+			log.Printf("error handling messages: %v", err)
+		}
+		time.Sleep(interval)
+	}
+}
+
+func (wcs *WhatsAppCrawlerService) handleMessages(page playwright.Page) error {
+	messagesText, err := wcs.getMessagesText(page)
+	if err != nil {
+		return fmt.Errorf("error getting messages text: %w", err)
+	}
+
+	if err := wcs.processMessages(page, messagesText); err != nil {
+		return fmt.Errorf("error processing messages: %w", err)
+	}
+
+	return nil
 }
 
 func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, messagesText []string) error {
@@ -101,12 +129,12 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 		return nil
 	}
 
-	if !wcs.checkIfMessageStartsWithIgnoredValues(messagesText[messageTextSize-1]) {
+	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) {
 		log.Println("---------- Processing messages ----------")
 		var messagesToSave []string
 		counter := 1
 
-		for messageTextSize-counter >= 0 && !wcs.checkIfMessageStartsWithIgnoredValues(messagesText[messageTextSize-counter]) {
+		for messageTextSize-counter >= 0 && !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-counter]) {
 			messagesToSave = append(messagesToSave, messagesText[messageTextSize-counter])
 			counter++
 		}
@@ -115,31 +143,16 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 			domainMessage := &domain.Message{
 				Message: message,
 			}
-			response := wcs.messageService.ProcessAndReply(wcs.context, domainMessage)
+			response := wcs.messageService.ProcessAndReply(domainMessage)
 			log.Printf("Message: %s", message)
 			err := wcs.typeAndSend(page, response.Message)
 			if err != nil {
 				return err
 			}
-
 		}
 		log.Println("----------------------------------------")
 	}
 	return nil
-}
-
-func (wcs *WhatsAppCrawlerService) checkMessages(page playwright.Page) {
-	for {
-		messagesText, err := wcs.getMessagesText(page)
-		if err != nil {
-			log.Printf("error processing messages: %v", err)
-		} else {
-			if err := wcs.processMessages(page, messagesText); err != nil {
-				log.Printf("error processing messages: %v", err)
-			}
-		}
-		time.Sleep(interval)
-	}
 }
 
 func (wcs *WhatsAppCrawlerService) getMessagesText(page playwright.Page) ([]string, error) {
@@ -173,6 +186,6 @@ func (wcs *WhatsAppCrawlerService) typeAndSend(page playwright.Page, message str
 	return page.Keyboard().Press("Enter")
 }
 
-func (wcs *WhatsAppCrawlerService) checkIfMessageStartsWithIgnoredValues(message string) bool {
-	return strings.HasPrefix(message, "sys:")
+func (wcs *WhatsAppCrawlerService) checkIfIsSystemMessage(message string) bool {
+	return strings.HasPrefix(message, domain.SystemMessagePrefix)
 }
