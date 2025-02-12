@@ -38,6 +38,6 @@ func (ms *MessageService) ProcessAndReply(_ context.Context, message *domain.Mes
 	}
 
 	return &domain.Message{
-		Message: domain.InvalidMessage,
+		Message: domain.InvalidMessage + ": " + message.Message,
 	}
 }

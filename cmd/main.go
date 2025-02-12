@@ -35,6 +35,8 @@ func main() {
 	ms := services.NewMessageService(gsc)
 	mh := api.NewMessageHandler(ms)
 
+	services.WhatsAppCrawler(ms)
+
 	api.InitRoutes(humaApi, mh)
 
 	err = http.ListenAndServe(address, e)

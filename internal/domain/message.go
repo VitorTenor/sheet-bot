@@ -18,7 +18,7 @@ const (
 
 	dailyMessage = "diario"
 	dailyBalance = "saldo"
-	regex        = `^-?\d+\s\/\s\w+$`
+	regex        = `^-?\d+\s\/\s.+(?:\s\d+)?$`
 )
 
 func (m *Message) Normalize() {
