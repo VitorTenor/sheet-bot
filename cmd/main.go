@@ -12,9 +12,14 @@ import (
 func main() {
 	ctx := context.Background()
 
-	googleSrv, err := configs.BuildGoogleSrv(ctx)
+	appConfig, err := configs.InitConfig(ctx, "application.yaml")
 	if err != nil {
-		log.Fatal("Failed to build Google service: ", err)
+		log.Fatal("failed to load configuration: ", err)
+	}
+
+	googleSrv, err := configs.BuildGoogleSrv(ctx, appConfig)
+	if err != nil {
+		log.Fatal("failed to build Google service: ", err)
 	}
 
 	gss := client.NewGoogleSheetsClient(googleSrv)

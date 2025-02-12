@@ -1,0 +1,4 @@
+google:
+  private_key: ${google_private_key}
+  client_email: ${google_client_email}
+  api_url: "https://www.googleapis.com/auth/spreadsheets"

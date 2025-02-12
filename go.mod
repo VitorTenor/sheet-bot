@@ -7,6 +7,7 @@ require (
 	github.com/playwright-community/playwright-go v0.4902.0
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/api v0.220.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
