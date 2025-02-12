@@ -33,7 +33,8 @@ func (gss *GoogleSheetsService) GetDailyExpenses() string {
 		return SystemError
 	}
 
-	response, err := gss.client.GetValue(SpreadsheetID, utils.BuildMoneyDailyOutput())
+	valueRange := utils.BuildDailyOutcomeRange()
+	response, err := gss.client.GetValue(SpreadsheetID, valueRange)
 	if err != nil {
 		return SystemError
 	}
@@ -51,7 +52,7 @@ func (gss *GoogleSheetsService) GetBalance() string {
 		return SystemError
 	}
 
-	response, err := gss.client.GetValue(SpreadsheetID, utils.BuildMoneyBalance())
+	response, err := gss.client.GetValue(SpreadsheetID, utils.BuildBalanceRange())
 	if err != nil {
 		return SystemError
 	}
@@ -86,18 +87,17 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 	if value != 0 {
 		isIncome := value > 0
 
-		rowIndex := utils.LetterToIndex(utils.GetMoneyInputColumn()) + 2
-		noteColumnIndex := utils.LetterToIndex(utils.GetMoneyInputColumn())
-
-		column := utils.BuildMoneyInput()
+		row := utils.GetCurrentDayRow()
+		column := utils.GetCurrentIncomeColumnNumber()
+		rowAndColumnRange := utils.BuildIncomeRange()
 
 		if !isIncome {
-			column = utils.BuildMoneyDailyOutput()
-			rowIndex = utils.LetterToIndex(utils.GetMoneyOutputDailyColumn())
-			noteColumnIndex = utils.LetterToIndex(utils.GetMoneyOutputDailyColumn())
+			row = utils.GetCurrentDayRow()
+			column = utils.GetCurrentDailyOutcomeColumnNumber()
+			rowAndColumnRange = utils.BuildDailyOutcomeRange()
 		}
 
-		response, err := gss.client.GetValue(SpreadsheetID, column)
+		response, err := gss.client.GetValue(SpreadsheetID, rowAndColumnRange)
 		if err != nil {
 			return err
 		}
@@ -112,30 +112,30 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 			return err
 		}
 
-		existingNote, err := gss.client.GetNote(SpreadsheetID, sheetId, column)
+		existingNote, err := gss.client.GetNote(SpreadsheetID, sheetId, rowAndColumnRange)
 		if err != nil {
 			return err
 		}
 
-		if existingNote == "" {
+		if existingNote == "" && !isIncome {
 			parsedValue = 0
 		}
 
 		newValue := strconv.FormatFloat(parsedValue+math.Abs(value), 'f', -1, 64)
 
-		err = gss.client.UpdateSheet(SpreadsheetID, column, []interface{}{newValue})
+		err = gss.client.UpdateSheet(SpreadsheetID, rowAndColumnRange, []interface{}{newValue})
 		if err != nil {
 			return err
 		}
 
-		description := fmt.Sprintf("%f - %s", math.Abs(value), strings.Split(inputValue, "/")[1])
+		description := fmt.Sprintf("%.2f - %s", math.Abs(value), strings.Split(inputValue, "/")[1])
 
 		concatenatedNote := description
 		if existingNote != "" {
 			concatenatedNote = fmt.Sprintf("%s\n%s", existingNote, description)
 		}
 
-		noteRequest := utils.BuildNoteRequest(concatenatedNote, sheetId, rowIndex, noteColumnIndex)
+		noteRequest := utils.BuildNoteRequest(concatenatedNote, sheetId, row, column)
 		err = gss.client.BatchUpdate(SpreadsheetID, noteRequest)
 		if err != nil {
 			return err

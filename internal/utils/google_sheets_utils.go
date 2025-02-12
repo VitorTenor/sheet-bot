@@ -10,38 +10,29 @@ import (
 )
 
 const (
+	ColumnPerMonth   = 6
 	RowColumnPattern = "%s!%s%d"
 )
 
-func GetCurrentYear() int {
-	return time.Now().Year()
-}
-
-func GetMoneyInputColumn() string {
-	return convertToTitle((-5 + 6*getCurrentMonthNumber()) + 1)
-}
-
-func GetMoneyOutputDailyColumn() string {
-	return convertToTitle(-5 + 6*getCurrentMonthNumber() + 3)
-}
-
-func GetMoneyOutputBalanceColumn() string {
-	return convertToTitle(-5 + 6*getCurrentMonthNumber() + 4)
-}
-
-func GetCurrentDayColumn() int {
-	return time.Now().Day() + 2
-}
-
-func LetterToIndex(letter string) int {
-	return int(letter[0]) - 65
-}
-
 func CleanMoneyValue(value string) string {
-	return strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(value, "R$", ""), ".", ""), ",", "."))
+	newValue := strings.ReplaceAll(value, "R$", "")
+	newValue = strings.ReplaceAll(newValue, ".", "")
+	newValue = strings.ReplaceAll(newValue, ",", ".")
+
+	return strings.TrimSpace(newValue)
 }
 
-func BuildNoteRequest(concatenatedNote string, sheetId int64, rowIndex, noteColumnIndex int) *sheets.BatchUpdateSpreadsheetRequest {
+func convertToXlsxColumn(columnNumber int) string {
+	title := ""
+	for columnNumber > 0 {
+		columnNumber--
+		title = string(rune(columnNumber%26+65)) + title
+		columnNumber = columnNumber / 26
+	}
+	return title
+}
+
+func BuildNoteRequest(concatenatedNote string, sheetId int64, row, column int) *sheets.BatchUpdateSpreadsheetRequest {
 	return &sheets.BatchUpdateSpreadsheetRequest{
 		Requests: []*sheets.Request{
 			{
@@ -58,10 +49,10 @@ func BuildNoteRequest(concatenatedNote string, sheetId int64, rowIndex, noteColu
 					Fields: "note",
 					Range: &sheets.GridRange{
 						SheetId:          sheetId,
-						StartRowIndex:    int64(rowIndex + 3),
-						EndRowIndex:      int64(rowIndex + 4),
-						StartColumnIndex: int64(noteColumnIndex),
-						EndColumnIndex:   int64(noteColumnIndex + 1),
+						StartRowIndex:    int64(row - 1),
+						EndRowIndex:      int64(row),
+						StartColumnIndex: int64(column),
+						EndColumnIndex:   int64(column + 1),
 					},
 				},
 			},
@@ -69,32 +60,59 @@ func BuildNoteRequest(concatenatedNote string, sheetId int64, rowIndex, noteColu
 	}
 }
 
-func BuildMoneyBalance() string {
-	return buildRowColumnPattern(strconv.Itoa(GetCurrentYear()), GetMoneyOutputBalanceColumn(), GetCurrentDayColumn())
+/* range methods */
+
+// saldo
+func BuildBalanceRange() string {
+	column := convertToXlsxColumn(GetCurrentBalanceColumnNumber())
+	return buildRowColumnPattern(strconv.Itoa(GetCurrentYear()), column)
 }
 
-func BuildMoneyDailyOutput() string {
-	return buildRowColumnPattern(strconv.Itoa(GetCurrentYear()), GetMoneyOutputDailyColumn(), GetCurrentDayColumn())
+// diario
+func BuildDailyOutcomeRange() string {
+	column := convertToXlsxColumn(GetCurrentDailyOutcomeColumnNumber() + 1)
+	return buildRowColumnPattern(strconv.Itoa(GetCurrentYear()), column)
 }
 
-func BuildMoneyInput() string {
-	return buildRowColumnPattern(strconv.Itoa(GetCurrentYear()), GetMoneyInputColumn(), GetCurrentDayColumn())
+// entrada
+func BuildIncomeRange() string {
+	column := convertToXlsxColumn(GetCurrentIncomeColumnNumber() + 1)
+	return buildRowColumnPattern(strconv.Itoa(GetCurrentYear()), column)
 }
 
-func buildRowColumnPattern(sheetName string, column string, row int) string {
-	return fmt.Sprintf(RowColumnPattern, sheetName, column, row)
+func buildRowColumnPattern(sheetName string, column string) string {
+	return fmt.Sprintf(RowColumnPattern, sheetName, column, GetCurrentDayRow())
 }
 
-func convertToTitle(columnNumber int) string {
-	title := ""
-	for columnNumber > 0 {
-		columnNumber--
-		title = string(rune(columnNumber%26+65)) + title
-		columnNumber = columnNumber / 26
-	}
-	return title
+/* row and column methods */
+
+func GetCurrentIncomeColumnNumber() int {
+	// 5 is the difference between the end of month range and the income 'entrada' column
+	return getCurrentMonthColumn() - 5
 }
 
-func getCurrentMonthNumber() int {
-	return int(time.Now().Month())
+func GetCurrentDailyOutcomeColumnNumber() int {
+	// 3 is the difference between the end of month range and the outcome 'diario' column
+	return getCurrentMonthColumn() - 3
+}
+
+func GetCurrentBalanceColumnNumber() int {
+	// 1 is the difference between the end of month range and the balance 'saldo' column
+	return getCurrentMonthColumn() - 1
+}
+
+/* date methods */
+
+func GetCurrentYear() int {
+	return time.Now().Year()
+}
+
+func getCurrentMonthColumn() int {
+	// x6 because each month has 6 columns
+	return int(time.Now().Month()) * ColumnPerMonth
+}
+
+func GetCurrentDayRow() int {
+	// +2 because the first and second rows are reserved for the header
+	return time.Now().Day() + 2
 }

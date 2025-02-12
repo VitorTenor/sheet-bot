@@ -17,8 +17,8 @@ func NewGoogleSheetsClient(srv *sheets.Service) *GoogleSheetsClient {
 	}
 }
 
-func (gsc *GoogleSheetsClient) GetNote(spreadsheetId string, sheetId int64, column string) (string, error) {
-	resp, err := gsc.srv.Spreadsheets.Get(spreadsheetId).Ranges(column).IncludeGridData(true).Do()
+func (gsc *GoogleSheetsClient) GetNote(spreadsheetId string, sheetId int64, rowAndColumnRange string) (string, error) {
+	resp, err := gsc.srv.Spreadsheets.Get(spreadsheetId).Ranges(rowAndColumnRange).IncludeGridData(true).Do()
 	if err != nil {
 		return "", err
 	}
@@ -32,8 +32,8 @@ func (gsc *GoogleSheetsClient) GetNote(spreadsheetId string, sheetId int64, colu
 	return "", errors.New("note not found")
 }
 
-func (gsc *GoogleSheetsClient) GetValue(spreadsheetId, column string) (*sheets.ValueRange, error) {
-	return gsc.srv.Spreadsheets.Values.Get(spreadsheetId, column).Do()
+func (gsc *GoogleSheetsClient) GetValue(spreadsheetId, rowAndColumnRange string) (*sheets.ValueRange, error) {
+	return gsc.srv.Spreadsheets.Values.Get(spreadsheetId, rowAndColumnRange).Do()
 }
 
 func (gsc *GoogleSheetsClient) GetSheetId(spreadsheetId, sheetName string) (int64, error) {
@@ -54,8 +54,8 @@ func (gsc *GoogleSheetsClient) BatchUpdate(spreadsheetId string, noteRequest *sh
 	return err
 }
 
-func (gsc *GoogleSheetsClient) UpdateSheet(spreadsheetId, column string, newRow []interface{}) error {
-	_, err := gsc.srv.Spreadsheets.Values.Update(spreadsheetId, column, &sheets.ValueRange{
+func (gsc *GoogleSheetsClient) UpdateSheet(spreadsheetId, rowAndColumnRange string, newRow []interface{}) error {
+	_, err := gsc.srv.Spreadsheets.Values.Update(spreadsheetId, rowAndColumnRange, &sheets.ValueRange{
 		Values: [][]interface{}{newRow},
 	}).ValueInputOption("USER_ENTERED").Do()
 	return err
