@@ -9,26 +9,26 @@ import (
 
 	"github.com/playwright-community/playwright-go"
 
+	"github.com/vitortenor/sheet-bot-api/internal/configs"
 	"github.com/vitortenor/sheet-bot-api/internal/domain"
 )
 
 type WhatsAppCrawlerService struct {
 	context        context.Context
+	appConfig      *configs.ApplicationConfig
 	messageService *MessageService
 }
 
-func NewWhatsAppCrawlerService(ctx context.Context, ms *MessageService) *WhatsAppCrawlerService {
+func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configs.ApplicationConfig, ms *MessageService) *WhatsAppCrawlerService {
 	return &WhatsAppCrawlerService{
 		context:        ctx,
+		appConfig:      appConfig,
 		messageService: ms,
 	}
 }
 
 const (
-	interval    = 2 * time.Second
-	groupName   = "sheet-bot"
-	whatsappURL = "https://web.whatsapp.com/"
-	userDataDir = "./user_data"
+	interval = 2 * time.Second
 )
 
 func (wcs *WhatsAppCrawlerService) WhatsAppCrawler() {
@@ -56,7 +56,7 @@ func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, e
 		return nil, err
 	}
 
-	browserContext, err := pw.Chromium.LaunchPersistentContext(userDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
+	browserContext, err := pw.Chromium.LaunchPersistentContext(wcs.appConfig.Crawler.UserDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
 		Headless: playwright.Bool(false),
 	})
 	if err != nil {
@@ -72,7 +72,7 @@ func (wcs *WhatsAppCrawlerService) openWhatsAppPage(browser playwright.BrowserCo
 		return nil, err
 	}
 
-	_, err = page.Goto(whatsappURL, playwright.PageGotoOptions{
+	_, err = page.Goto(wcs.appConfig.WhatsApp.WebURL, playwright.PageGotoOptions{
 		WaitUntil: (*playwright.WaitUntilState)(playwright.String("networkidle")),
 	})
 	if err != nil {
@@ -88,7 +88,7 @@ func (wcs *WhatsAppCrawlerService) openWhatsAppPage(browser playwright.BrowserCo
 }
 
 func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
-	sheetBot, err := page.QuerySelector(fmt.Sprintf(`span[title="%s"]`, groupName))
+	sheetBot, err := page.QuerySelector(fmt.Sprintf(`span[title="%s"]`, wcs.appConfig.WhatsApp.GroupName))
 	if err != nil {
 		return err
 	}
@@ -143,9 +143,10 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 			domainMessage := &domain.Message{
 				Message: message,
 			}
-			response := wcs.messageService.ProcessAndReply(domainMessage)
 			log.Printf("Message: %s", message)
+			response := wcs.messageService.ProcessAndReply(domainMessage)
 			err := wcs.typeAndSend(page, response.Message)
+			log.Printf("Response: %s", response.Message)
 			if err != nil {
 				return err
 			}

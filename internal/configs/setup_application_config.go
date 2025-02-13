@@ -15,7 +15,15 @@ type ApplicationConfig struct {
 		ClientEmail string `yaml:"client_email"`
 		PrivateKey  string `yaml:"private_key"`
 		ApiUrl      string `yaml:"api_url"`
+		SheetId     string `yaml:"sheet_id"`
 	} `yaml:"google"`
+	WhatsApp struct {
+		WebURL    string `yaml:"web_url"`
+		GroupName string `yaml:"group_name"`
+	} `yaml:"whatsapp"`
+	Crawler struct {
+		UserDataDir string `yaml:"user_data_dir"`
+	} `yaml:"crawler"`
 }
 
 func InitConfig(_ context.Context, path string) (*ApplicationConfig, error) {

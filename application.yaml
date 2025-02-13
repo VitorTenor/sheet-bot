@@ -1,4 +1,12 @@
 google:
   private_key: ${google_private_key}
   client_email: ${google_client_email}
+  sheet_id: ${google_sheet_id}
   api_url: "https://www.googleapis.com/auth/spreadsheets"
+
+whatsapp:
+  web_url: "https://web.whatsapp.com/"
+  group_name: "sheet-bot"
+
+crawler:
+  user_data_dir: "./user_data"

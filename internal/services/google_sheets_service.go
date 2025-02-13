@@ -7,34 +7,36 @@ import (
 	"strings"
 
 	"github.com/vitortenor/sheet-bot-api/internal/client"
+	"github.com/vitortenor/sheet-bot-api/internal/configs"
 	"github.com/vitortenor/sheet-bot-api/internal/domain"
 	"github.com/vitortenor/sheet-bot-api/internal/utils"
 )
 
 const (
-	SpreadsheetID = "1M8vonVq4defB0LfdqQbU26vyyJb3s2I0R2Z0YfAKodQ"
-	ZeroBalance   = domain.ZeroBalanceMessage
-	SystemError   = domain.SystemErrorMessage
+	ZeroBalance = domain.ZeroBalanceMessage
+	SystemError = domain.SystemErrorMessage
 )
 
 type GoogleSheetsService struct {
-	client *client.GoogleSheetsClient
+	appConfig *configs.ApplicationConfig
+	client    *client.GoogleSheetsClient
 }
 
-func NewGoogleSheetsService(gsc *client.GoogleSheetsClient) *GoogleSheetsService {
+func NewGoogleSheetsService(appConfig *configs.ApplicationConfig, gsc *client.GoogleSheetsClient) *GoogleSheetsService {
 	return &GoogleSheetsService{
-		client: gsc,
+		appConfig: appConfig,
+		client:    gsc,
 	}
 }
 
 func (gss *GoogleSheetsService) GetDailyExpenses() string {
-	_, err := gss.client.GetSheetId(SpreadsheetID, strconv.Itoa(utils.GetCurrentYear()))
+	_, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
 	if err != nil {
 		return SystemError
 	}
 
 	valueRange := utils.BuildDailyOutcomeRange()
-	response, err := gss.client.GetValue(SpreadsheetID, valueRange)
+	response, err := gss.client.GetValue(gss.appConfig.Google.SheetId, valueRange)
 	if err != nil {
 		return SystemError
 	}
@@ -47,12 +49,12 @@ func (gss *GoogleSheetsService) GetDailyExpenses() string {
 }
 
 func (gss *GoogleSheetsService) GetBalance() string {
-	_, err := gss.client.GetSheetId(SpreadsheetID, strconv.Itoa(utils.GetCurrentYear()))
+	_, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
 	if err != nil {
 		return SystemError
 	}
 
-	response, err := gss.client.GetValue(SpreadsheetID, utils.BuildBalanceRange())
+	response, err := gss.client.GetValue(gss.appConfig.Google.SheetId, utils.BuildBalanceRange())
 	if err != nil {
 		return SystemError
 	}
@@ -65,7 +67,7 @@ func (gss *GoogleSheetsService) GetBalance() string {
 }
 
 func (gss *GoogleSheetsService) ProcessAndUpdateSheet(inputValue string) string {
-	sheetId, err := gss.client.GetSheetId(SpreadsheetID, strconv.Itoa(utils.GetCurrentYear()))
+	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
 	if err != nil {
 		return SystemError
 	}
@@ -97,7 +99,7 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 			rowAndColumnRange = utils.BuildDailyOutcomeRange()
 		}
 
-		response, err := gss.client.GetValue(SpreadsheetID, rowAndColumnRange)
+		response, err := gss.client.GetValue(gss.appConfig.Google.SheetId, rowAndColumnRange)
 		if err != nil {
 			return err
 		}
@@ -112,7 +114,7 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 			return err
 		}
 
-		existingNote, err := gss.client.GetNote(SpreadsheetID, sheetId, rowAndColumnRange)
+		existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, rowAndColumnRange)
 		if err != nil {
 			return err
 		}
@@ -123,7 +125,7 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 
 		newValue := strconv.FormatFloat(parsedValue+math.Abs(value), 'f', -1, 64)
 
-		err = gss.client.UpdateSheet(SpreadsheetID, rowAndColumnRange, []interface{}{newValue})
+		err = gss.client.UpdateSheet(gss.appConfig.Google.SheetId, rowAndColumnRange, []interface{}{newValue})
 		if err != nil {
 			return err
 		}
@@ -136,7 +138,7 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 		}
 
 		noteRequest := utils.BuildNoteRequest(concatenatedNote, sheetId, row, column)
-		err = gss.client.BatchUpdate(SpreadsheetID, noteRequest)
+		err = gss.client.BatchUpdate(gss.appConfig.Google.SheetId, noteRequest)
 		if err != nil {
 			return err
 		}
