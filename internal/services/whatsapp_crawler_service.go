@@ -130,7 +130,7 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 	}
 
 	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) {
-		log.Info("Processing messages...")
+		log.Info("processing messages...")
 		var messagesToSave []string
 		counter := 1
 
@@ -144,16 +144,16 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 				Message: message,
 			}
 
-			log.Info("Processing message: ", domainMessage.Message)
+			log.Info("processing message: ", domainMessage.Message)
 			response := wcs.messageService.ProcessAndReply(domainMessage)
 			err := wcs.typeAndSend(page, response.Message)
-			log.Info("Message processed: ", response.Message)
+			log.Info("message processed: ", response.Message)
 
 			if err != nil {
 				return err
 			}
 		}
-		log.Info("Messages processed")
+		log.Info("messages processed")
 	}
 	return nil
 }
