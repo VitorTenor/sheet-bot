@@ -32,6 +32,7 @@ func (m *Message) CheckIfIsSystemMessage() bool {
 func (m *Message) Normalize() {
 	if !m.IsIncomeOrOutcome() {
 		m.Message = strings.ToLower(m.Message)
+		m.Message = strings.ReplaceAll(m.Message, "á", "a")
 	}
 }
 
