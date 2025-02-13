@@ -3,10 +3,10 @@ package configs
 import (
 	"context"
 	"errors"
-	"log"
 	"os"
 	"strings"
 
+	"github.com/labstack/gommon/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,7 +27,7 @@ type ApplicationConfig struct {
 }
 
 func InitConfig(_ context.Context, path string) (*ApplicationConfig, error) {
-	log.Println("loading configuration file...")
+	log.Info("loading configuration file")
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, errors.New("configuration file does not exist")

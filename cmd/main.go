@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+
+	"github.com/labstack/gommon/log"
 
 	"github.com/vitortenor/sheet-bot-api/internal/client"
 	"github.com/vitortenor/sheet-bot-api/internal/configs"
@@ -10,15 +11,18 @@ import (
 )
 
 func main() {
+	log.Info("starting application...")
 	ctx := context.Background()
 
 	appConfig, err := configs.InitConfig(ctx, "application.yaml")
 	if err != nil {
+		log.Error("failed to load configuration: ", err)
 		log.Fatal("failed to load configuration: ", err)
 	}
 
 	googleSrv, err := configs.BuildGoogleSrv(ctx, appConfig)
 	if err != nil {
+		log.Error("failed to build Google service: ", err)
 		log.Fatal("failed to build Google service: ", err)
 	}
 

@@ -30,12 +30,12 @@ func (m *Message) CheckIfIsSystemMessage() bool {
 }
 
 func (m *Message) Normalize() {
-	if !m.CheckMessage() {
+	if !m.IsIncomeOrOutcome() {
 		m.Message = strings.ToLower(m.Message)
 	}
 }
 
-func (m *Message) CheckMessage() bool {
+func (m *Message) IsIncomeOrOutcome() bool {
 	if m.Message == "" {
 		return false
 	}

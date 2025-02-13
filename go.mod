@@ -3,7 +3,7 @@ module github.com/vitortenor/sheet-bot-api
 go 1.23
 
 require (
-	github.com/danielgtaylor/huma/v2 v2.28.0
+	github.com/labstack/gommon v0.4.2
 	github.com/playwright-community/playwright-go v0.4902.0
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/api v0.220.0
@@ -24,6 +24,10 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.58.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

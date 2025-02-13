@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
+	"github.com/labstack/gommon/log"
 	"github.com/playwright-community/playwright-go"
 
 	"github.com/vitortenor/sheet-bot-api/internal/configs"
@@ -130,7 +130,7 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 	}
 
 	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) {
-		log.Println("---------- Processing messages ----------")
+		log.Info("Processing messages...")
 		var messagesToSave []string
 		counter := 1
 
@@ -143,15 +143,17 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 			domainMessage := &domain.Message{
 				Message: message,
 			}
-			log.Printf("Message: %s", message)
+
+			log.Info("Processing message: ", domainMessage.Message)
 			response := wcs.messageService.ProcessAndReply(domainMessage)
 			err := wcs.typeAndSend(page, response.Message)
-			log.Printf("Response: %s", response.Message)
+			log.Info("Message processed: ", response.Message)
+
 			if err != nil {
 				return err
 			}
 		}
-		log.Println("----------------------------------------")
+		log.Info("Messages processed")
 	}
 	return nil
 }
