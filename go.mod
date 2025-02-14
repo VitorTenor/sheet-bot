@@ -1,4 +1,4 @@
-module github.com/vitortenor/sheet-bot-api
+module github.com/vitortenor/sheet-bot
 
 go 1.23
 

@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vitortenor/sheet-bot-api/internal/client"
-	"github.com/vitortenor/sheet-bot-api/internal/configs"
-	"github.com/vitortenor/sheet-bot-api/internal/domain"
-	"github.com/vitortenor/sheet-bot-api/internal/utils"
+	"github.com/vitortenor/sheet-bot/internal/client"
+	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/domain"
+	"github.com/vitortenor/sheet-bot/internal/utils"
 )
 
 const (

@@ -5,9 +5,9 @@ import (
 
 	"github.com/labstack/gommon/log"
 
-	"github.com/vitortenor/sheet-bot-api/internal/client"
-	"github.com/vitortenor/sheet-bot-api/internal/configs"
-	"github.com/vitortenor/sheet-bot-api/internal/services"
+	"github.com/vitortenor/sheet-bot/internal/client"
+	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/services"
 )
 
 func main() {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/labstack/gommon/log"
 
-	"github.com/vitortenor/sheet-bot-api/internal/domain"
+	"github.com/vitortenor/sheet-bot/internal/domain"
 )
 
 type MessageService struct {

@@ -9,8 +9,8 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/playwright-community/playwright-go"
 
-	"github.com/vitortenor/sheet-bot-api/internal/configs"
-	"github.com/vitortenor/sheet-bot-api/internal/domain"
+	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/domain"
 )
 
 type WhatsAppCrawlerService struct {
