@@ -22,6 +22,7 @@ func NewMessageService(ctx context.Context, gss *GoogleSheetsService) *MessageSe
 
 func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Message {
 	log.Info("processing message")
+
 	if message.CheckIfIsSystemMessage() {
 		return nil
 	}
@@ -46,6 +47,13 @@ func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Messa
 		log.Info("processing daily balance message")
 		return &domain.Message{
 			Message: ms.sheetService.GetBalance(),
+		}
+	}
+
+	if message.IsSetAsZero() {
+		log.Info("processing set as zero message")
+		return &domain.Message{
+			Message: ms.sheetService.SetDailyAsZero(),
 		}
 	}
 

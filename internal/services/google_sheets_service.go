@@ -66,6 +66,29 @@ func (gss *GoogleSheetsService) GetBalance() string {
 	return ZeroBalance
 }
 
+func (gss *GoogleSheetsService) SetDailyAsZero() string {
+	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
+	if err != nil {
+		return SystemError
+	}
+
+	existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, utils.BuildDailyOutcomeRange())
+	if err != nil {
+		return SystemError
+	}
+
+	if existingNote != "" {
+		return domain.SystemMessagePrefix + "daily value has notes, please remove them before setting as zero"
+	}
+
+	err = gss.client.UpdateSheet(gss.appConfig.Google.SheetId, utils.BuildDailyOutcomeRange(), []interface{}{"0"})
+	if err != nil {
+		return SystemError
+	}
+
+	return domain.SystemMessagePrefix + "daily value set as zero"
+}
+
 func (gss *GoogleSheetsService) ProcessAndUpdateSheet(inputValue string) string {
 	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
 	if err != nil {
@@ -85,64 +108,65 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 	if err != nil {
 		return err
 	}
-
-	if value != 0 {
-		isIncome := value > 0
-
-		row := utils.GetCurrentDayRow()
-		column := utils.GetCurrentIncomeColumnNumber()
-		rowAndColumnRange := utils.BuildIncomeRange()
-
-		if !isIncome {
-			row = utils.GetCurrentDayRow()
-			column = utils.GetCurrentDailyOutcomeColumnNumber()
-			rowAndColumnRange = utils.BuildDailyOutcomeRange()
-		}
-
-		response, err := gss.client.GetValue(gss.appConfig.Google.SheetId, rowAndColumnRange)
-		if err != nil {
-			return err
-		}
-
-		currentValue := "0"
-		if len(response.Values) > 0 && len(response.Values[0]) > 0 {
-			currentValue = utils.CleanMoneyValue(response.Values[0][0].(string))
-		}
-
-		parsedValue, err := strconv.ParseFloat(currentValue, 64)
-		if err != nil {
-			return err
-		}
-
-		existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, rowAndColumnRange)
-		if err != nil {
-			return err
-		}
-
-		if existingNote == "" && !isIncome {
-			parsedValue = 0
-		}
-
-		newValue := strconv.FormatFloat(parsedValue+math.Abs(value), 'f', -1, 64)
-
-		err = gss.client.UpdateSheet(gss.appConfig.Google.SheetId, rowAndColumnRange, []interface{}{newValue})
-		if err != nil {
-			return err
-		}
-
-		description := fmt.Sprintf("%.2f - %s", math.Abs(value), strings.Split(inputValue, "/")[1])
-
-		concatenatedNote := description
-		if existingNote != "" {
-			concatenatedNote = fmt.Sprintf("%s\n%s", existingNote, description)
-		}
-
-		noteRequest := utils.BuildNoteRequest(concatenatedNote, sheetId, row, column)
-		err = gss.client.BatchUpdate(gss.appConfig.Google.SheetId, noteRequest)
-		if err != nil {
-			return err
-		}
-
+	if value == 0 {
+		return nil
 	}
+
+	isIncome := value > 0
+
+	row := utils.GetCurrentDayRow()
+	column := utils.GetCurrentIncomeColumnNumber()
+	rowAndColumnRange := utils.BuildIncomeRange()
+
+	if !isIncome {
+		row = utils.GetCurrentDayRow()
+		column = utils.GetCurrentDailyOutcomeColumnNumber()
+		rowAndColumnRange = utils.BuildDailyOutcomeRange()
+	}
+
+	response, err := gss.client.GetValue(gss.appConfig.Google.SheetId, rowAndColumnRange)
+	if err != nil {
+		return err
+	}
+
+	currentValue := "0"
+	if len(response.Values) > 0 && len(response.Values[0]) > 0 {
+		currentValue = utils.CleanMoneyValue(response.Values[0][0].(string))
+	}
+
+	parsedValue, err := strconv.ParseFloat(currentValue, 64)
+	if err != nil {
+		return err
+	}
+
+	existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, rowAndColumnRange)
+	if err != nil {
+		return err
+	}
+
+	if existingNote == "" && !isIncome {
+		parsedValue = 0
+	}
+
+	newValue := strconv.FormatFloat(parsedValue+math.Abs(value), 'f', -1, 64)
+
+	err = gss.client.UpdateSheet(gss.appConfig.Google.SheetId, rowAndColumnRange, []interface{}{newValue})
+	if err != nil {
+		return err
+	}
+
+	description := fmt.Sprintf("%.2f - %s", math.Abs(value), strings.Split(inputValue, "/")[1])
+
+	concatenatedNote := description
+	if existingNote != "" {
+		concatenatedNote = fmt.Sprintf("%s\n%s", existingNote, description)
+	}
+
+	noteRequest := utils.BuildNoteRequest(concatenatedNote, sheetId, row, column)
+	err = gss.client.BatchUpdate(gss.appConfig.Google.SheetId, noteRequest)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

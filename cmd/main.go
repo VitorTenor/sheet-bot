@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/labstack/gommon/log"
+	"github.com/playwright-community/playwright-go"
 
 	"github.com/vitortenor/sheet-bot/internal/client"
 	"github.com/vitortenor/sheet-bot/internal/configs"
@@ -14,15 +15,18 @@ func main() {
 	log.Info("starting application...")
 	ctx := context.Background()
 
+	err := playwright.Install()
+	if err != nil {
+		log.Error("failed to install playwright: ", err)
+	}
+
 	appConfig, err := configs.InitConfig(ctx, "application.yaml")
 	if err != nil {
-		log.Error("failed to load configuration: ", err)
 		log.Fatal("failed to load configuration: ", err)
 	}
 
 	googleSrv, err := configs.BuildGoogleSrv(ctx, appConfig)
 	if err != nil {
-		log.Error("failed to build Google service: ", err)
 		log.Fatal("failed to build Google service: ", err)
 	}
 

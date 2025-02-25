@@ -57,6 +57,7 @@ func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, e
 	}
 
 	browserContext, err := pw.Chromium.LaunchPersistentContext(wcs.appConfig.Crawler.UserDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
+		Channel:  playwright.String("chrome"),
 		Headless: playwright.Bool(false),
 	})
 	if err != nil {

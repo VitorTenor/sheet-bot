@@ -18,6 +18,7 @@ const (
 
 	dailyMessage = "diario"
 	dailyBalance = "saldo"
+	setAsZero    = "zerar"
 	regex        = `^-?\d+\s\/\s.+(?:\s\d+)?$`
 )
 
@@ -62,6 +63,18 @@ func (m *Message) IsDailyBalance() bool {
 	}
 
 	if m.Message == dailyBalance {
+		return true
+	}
+
+	return false
+}
+
+func (m *Message) IsSetAsZero() bool {
+	if m.Message == "" {
+		return false
+	}
+
+	if m.Message == setAsZero {
 		return true
 	}
 
