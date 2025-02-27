@@ -148,7 +148,7 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 		parsedValue = 0
 	}
 
-	newValue := strconv.FormatFloat(parsedValue+math.Abs(value), 'f', -1, 64)
+	newValue := strings.Replace(fmt.Sprintf("%.2f", parsedValue+math.Abs(value)), ".", ",", -1)
 
 	err = gss.client.UpdateSheet(gss.appConfig.Google.SheetId, rowAndColumnRange, []interface{}{newValue})
 	if err != nil {

@@ -19,7 +19,7 @@ const (
 	dailyMessage = "diario"
 	dailyBalance = "saldo"
 	setAsZero    = "zerar"
-	regex        = `^-?\d+\s\/\s.+(?:\s\d+)?$`
+	regex        = `^-?\d+(?:[.,]\d+)?\s\/\s.+$`
 )
 
 func (m *Message) CheckIfIsSystemMessage() bool {
@@ -31,8 +31,11 @@ func (m *Message) CheckIfIsSystemMessage() bool {
 }
 
 func (m *Message) Normalize() {
-	if !m.IsIncomeOrOutcome() {
+	if m.IsIncomeOrOutcome() {
+		m.Message = strings.ReplaceAll(m.Message, ",", ".")
+	} else {
 		m.Message = strings.ToLower(m.Message)
+		// in pt-br the message 'diario' can be written with an accent
 		m.Message = strings.ReplaceAll(m.Message, "á", "a")
 	}
 }
