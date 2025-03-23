@@ -30,9 +30,12 @@ func main() {
 		log.Fatal("failed to build Google service: ", err)
 	}
 
+	oac := client.NewOllamaAIClient(appConfig.Ai.ModelURL)
+	oas := services.NewOllamaAIService(appConfig, oac)
+
 	gss := client.NewGoogleSheetsClient(googleSrv)
 	gsc := services.NewGoogleSheetsService(appConfig, gss)
-	ms := services.NewMessageService(ctx, gsc)
+	ms := services.NewMessageService(ctx, appConfig, gsc, oas)
 
 	wcs := services.NewWhatsAppCrawlerService(ctx, appConfig, ms)
 	wcs.WhatsAppCrawler()

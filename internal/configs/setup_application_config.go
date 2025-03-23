@@ -24,6 +24,11 @@ type ApplicationConfig struct {
 	Crawler struct {
 		UserDataDir string `yaml:"user_data_dir"`
 	} `yaml:"crawler"`
+	Ai struct {
+		IsEnabled bool   `yaml:"is_enabled"`
+		ModelURL  string `yaml:"model_url"`
+		ModelName string `yaml:"model_name"`
+	} `yaml:"ai"`
 }
 
 func InitConfig(_ context.Context, path string) (*ApplicationConfig, error) {

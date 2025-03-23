@@ -10,3 +10,10 @@ whatsapp:
 
 crawler:
   user_data_dir: "./user_data"
+
+ai:
+  is_enabled: true
+  model_url: "http://127.0.0.1:11434/api/generate"
+  model_name: "llama3.2"
+
+
