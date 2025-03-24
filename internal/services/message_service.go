@@ -36,12 +36,17 @@ func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Messa
 		patronizedMessage := ms.aiService.GetOllamaAIResponse(message.Message)
 		if patronizedMessage != "false" {
 			log.Info("processing income/outcome message")
+			message = &domain.Message{
+				Message: patronizedMessage,
+			}
+			message.Normalize()
 			return &domain.Message{
-				Message: ms.sheetService.ProcessAndUpdateSheet(patronizedMessage),
+				Message: ms.sheetService.ProcessAndUpdateSheet(message.Message),
 			}
 		}
 	} else if message.IsIncomeOrOutcome() {
 		log.Info("processing income/outcome message")
+		message.Normalize()
 		return &domain.Message{
 			Message: ms.sheetService.ProcessAndUpdateSheet(message.Message),
 		}
