@@ -31,6 +31,13 @@ const (
 	interval = 2 * time.Second
 )
 
+var (
+	playwrightTimeout = playwright.Float(3600000) // 1 hour timeout for playwright operations
+	playwrightOptions = playwright.PageWaitForSelectorOptions{
+		Timeout: playwrightTimeout,
+	}
+)
+
 func (wcs *WhatsAppCrawlerService) WhatsAppCrawler() {
 	browser, err := wcs.launchBrowser()
 	if err != nil {
@@ -59,6 +66,7 @@ func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, e
 	browserContext, err := pw.Chromium.LaunchPersistentContext(wcs.appConfig.Crawler.UserDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
 		Channel:  playwright.String("chrome"),
 		Headless: playwright.Bool(false),
+		Timeout:  playwrightTimeout,
 	})
 	if err != nil {
 		return nil, err
@@ -80,7 +88,7 @@ func (wcs *WhatsAppCrawlerService) openWhatsAppPage(browser playwright.BrowserCo
 		return nil, err
 	}
 
-	_, err = page.WaitForSelector(".x1qlqyl8")
+	_, err = page.WaitForSelector(fmt.Sprintf("text='%s'", wcs.appConfig.WhatsApp.GroupName), playwrightOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +106,7 @@ func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
 		return err
 	}
 
-	_, err = page.WaitForSelector(".x10l6tqk")
+	_, err = page.WaitForSelector(".x10l6tqk", playwrightOptions)
 	return err
 }
 
