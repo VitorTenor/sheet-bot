@@ -7,7 +7,7 @@ import (
 	"github.com/playwright-community/playwright-go"
 
 	"github.com/vitortenor/sheet-bot/internal/client"
-	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/configuration"
 	"github.com/vitortenor/sheet-bot/internal/services"
 )
 
@@ -20,12 +20,12 @@ func main() {
 		log.Error("failed to install playwright: ", err)
 	}
 
-	appConfig, err := configs.InitConfig(ctx, "application.yaml")
+	appConfig, err := configuration.InitConfig(ctx, "application.yaml")
 	if err != nil {
 		log.Fatal("failed to load configuration: ", err)
 	}
 
-	googleSrv, err := configs.BuildGoogleSrv(ctx, appConfig)
+	googleSrv, err := configuration.BuildGoogleSrv(ctx, appConfig)
 	if err != nil {
 		log.Fatal("failed to build Google service: ", err)
 	}

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/vitortenor/sheet-bot/internal/client"
-	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/configuration"
 	"github.com/vitortenor/sheet-bot/internal/domain"
 	"github.com/vitortenor/sheet-bot/internal/utils"
 )
@@ -18,11 +18,11 @@ const (
 )
 
 type GoogleSheetsService struct {
-	appConfig *configs.ApplicationConfig
+	appConfig *configuration.ApplicationConfig
 	client    *client.GoogleSheetsClient
 }
 
-func NewGoogleSheetsService(appConfig *configs.ApplicationConfig, gsc *client.GoogleSheetsClient) *GoogleSheetsService {
+func NewGoogleSheetsService(appConfig *configuration.ApplicationConfig, gsc *client.GoogleSheetsClient) *GoogleSheetsService {
 	return &GoogleSheetsService{
 		appConfig: appConfig,
 		client:    gsc,

@@ -5,18 +5,18 @@ import (
 
 	"github.com/labstack/gommon/log"
 
-	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/configuration"
 	"github.com/vitortenor/sheet-bot/internal/domain"
 )
 
 type MessageService struct {
 	context      context.Context
-	appConfig    *configs.ApplicationConfig
+	appConfig    *configuration.ApplicationConfig
 	sheetService *GoogleSheetsService
 	aiService    *OllamaAIService
 }
 
-func NewMessageService(ctx context.Context, appConfig *configs.ApplicationConfig, gss *GoogleSheetsService, oas *OllamaAIService) *MessageService {
+func NewMessageService(ctx context.Context, appConfig *configuration.ApplicationConfig, gss *GoogleSheetsService, oas *OllamaAIService) *MessageService {
 	return &MessageService{
 		context:      ctx,
 		sheetService: gss,

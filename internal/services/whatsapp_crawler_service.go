@@ -9,17 +9,17 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/playwright-community/playwright-go"
 
-	"github.com/vitortenor/sheet-bot/internal/configs"
+	"github.com/vitortenor/sheet-bot/internal/configuration"
 	"github.com/vitortenor/sheet-bot/internal/domain"
 )
 
 type WhatsAppCrawlerService struct {
 	context        context.Context
-	appConfig      *configs.ApplicationConfig
+	appConfig      *configuration.ApplicationConfig
 	messageService *MessageService
 }
 
-func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configs.ApplicationConfig, ms *MessageService) *WhatsAppCrawlerService {
+func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configuration.ApplicationConfig, ms *MessageService) *WhatsAppCrawlerService {
 	return &WhatsAppCrawlerService{
 		context:        ctx,
 		appConfig:      appConfig,
