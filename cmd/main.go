@@ -35,7 +35,8 @@ func main() {
 
 	gss := client.NewGoogleSheetsClient(googleSrv)
 	gsc := services.NewGoogleSheetsService(appConfig, gss)
-	ms := services.NewMessageService(ctx, appConfig, gsc, oas)
+	mis := services.NewMessageInterpreterService()
+	ms := services.NewMessageService(ctx, appConfig, gsc, oas, mis)
 
 	wcs := services.NewWhatsAppCrawlerService(ctx, appConfig, ms)
 	wcs.WhatsAppCrawler()
