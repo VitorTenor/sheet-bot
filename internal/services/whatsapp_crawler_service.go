@@ -138,7 +138,7 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 		return nil
 	}
 
-	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) {
+	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) && strings.TrimSpace(messagesText[messageTextSize-1]) != "" {
 		log.Info("processing messages...")
 		var messagesToSave []string
 		counter := 1
@@ -168,16 +168,22 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 }
 
 func (wcs *WhatsAppCrawlerService) getMessagesText(page playwright.Page) ([]string, error) {
-	mainDiv, err := page.QuerySelector(`div[role="application"]`)
+	mainDiv, err := page.QuerySelector(`#main`)
 	if err != nil {
 		return nil, err
 	}
-	children, err := mainDiv.QuerySelectorAll(".selectable-text")
+
+	children, err := mainDiv.QuerySelectorAll(".selectable-text.copyable-text span")
 	if err != nil {
 		return nil, err
 	}
+
 	var messagesText []string
 	for _, child := range children {
+		hasLexicalAttr, err := child.GetAttribute("data-lexical-text")
+		if err == nil && hasLexicalAttr == "true" {
+			continue
+		}
 		messageText, err := child.TextContent()
 		if err != nil {
 			return nil, err
