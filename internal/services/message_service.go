@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/labstack/gommon/log"
 
@@ -37,58 +36,57 @@ func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Messa
 	}
 
 	if ms.appConfig.Ai.IsEnabled {
-		patronizedMessage := ms.aiService.GetOllamaAIResponse(message.Message)
-		if patronizedMessage != "false" {
-			log.Info("processing income/outcome message")
-			message = &domain.Message{
-				Message: patronizedMessage,
-			}
-			message.Normalize()
-			return &domain.Message{
-				Message: ms.sheetService.ProcessAndUpdateSheet(message.Message),
-			}
+		if resp := ms.aiService.GetOllamaAIResponse(message.Message); resp != "false" {
+			return ms.processIncomeOutcome(&domain.Message{
+				Message: resp,
+			})
 		}
 	}
 
-	patronizedMessage := ms.interpreterService.InterpretMessage(message.Message)
-	fmt.Println("Patronized message:", patronizedMessage)
-	if patronizedMessage != false {
-		message = &domain.Message{
-			Message: patronizedMessage.(string),
-		}
-		if message.IsIncomeOrOutcome() {
-			log.Info("processing income/outcome message")
-			message.Normalize()
-			return &domain.Message{
-				Message: ms.sheetService.ProcessAndUpdateSheet(message.Message),
+	if message.IsIncomeOrOutcome() {
+		return ms.processIncomeOutcome(message)
+	}
+
+	if resp := ms.interpreterService.InterpretMessage(message.Message); resp != false {
+		if msg, ok := resp.(string); ok {
+			interpreted := &domain.Message{
+				Message: msg,
+			}
+			if interpreted.IsIncomeOrOutcome() {
+				return ms.processIncomeOutcome(interpreted)
 			}
 		}
 	}
 
 	message.Normalize()
 
-	if message.IsDailyExpense() {
+	switch {
+	case message.IsDailyExpense():
 		log.Info("processing daily expenses message")
-		return &domain.Message{
-			Message: ms.sheetService.GetDailyExpenses(),
-		}
-	}
+		return ms.newReply(ms.sheetService.GetDailyExpenses())
 
-	if message.IsDailyBalance() {
+	case message.IsDailyBalance():
 		log.Info("processing daily balance message")
-		return &domain.Message{
-			Message: ms.sheetService.GetBalance(),
-		}
-	}
+		return ms.newReply(ms.sheetService.GetBalance())
 
-	if message.IsSetAsZero() {
+	case message.IsSetAsZero():
 		log.Info("processing set as zero message")
-		return &domain.Message{
-			Message: ms.sheetService.SetDailyAsZero(),
-		}
-	}
+		return ms.newReply(ms.sheetService.SetDailyAsZero())
 
+	default:
+		return ms.newReply(domain.InvalidMessage + ": " + message.Message)
+	}
+}
+
+func (ms *MessageService) processIncomeOutcome(msg *domain.Message) *domain.Message {
+	log.Info("processing income/outcome message")
+	msg.Normalize()
+
+	return ms.newReply(ms.sheetService.ProcessAndUpdateSheet(msg.Message))
+}
+
+func (ms *MessageService) newReply(content string) *domain.Message {
 	return &domain.Message{
-		Message: domain.InvalidMessage + ": " + message.Message,
+		Message: content,
 	}
 }
