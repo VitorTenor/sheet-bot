@@ -170,3 +170,21 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 
 	return nil
 }
+
+func (gss *GoogleSheetsService) GetDetailedDailyBalance() string {
+	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
+	if err != nil {
+		return SystemError
+	}
+
+	existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, utils.BuildDailyOutcomeRange())
+	if err != nil {
+		return SystemError
+	}
+
+	if existingNote != "" {
+		return domain.SystemMessagePrefix + " " + existingNote
+	}
+
+	return domain.SystemMessagePrefix + "no detailed daily balance available"
+}

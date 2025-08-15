@@ -69,6 +69,10 @@ func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Messa
 		log.Info("processing daily balance message")
 		return ms.newReply(ms.sheetService.GetBalance())
 
+	case message.IsDetailedDailyBalance():
+		log.Info("processing detailed daily balance message")
+		return ms.newReply(ms.sheetService.GetDetailedDailyBalance())
+
 	case message.IsSetAsZero():
 		log.Info("processing set as zero message")
 		return ms.newReply(ms.sheetService.SetDailyAsZero())

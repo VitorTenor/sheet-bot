@@ -16,10 +16,11 @@ const (
 	InvalidMessage     = SystemMessagePrefix + "invalid message"
 	ZeroBalanceMessage = SystemMessagePrefix + "R$ 0,00"
 
-	dailyMessage = "diario"
-	dailyBalance = "saldo"
-	setAsZero    = "zerar"
-	regex        = `^-?\d+(?:[.,]\d+)?\s\/\s.+$`
+	dailyMessage         = "diario"
+	detailedDailyMessage = "notas"
+	dailyBalance         = "saldo"
+	setAsZero            = "zerar"
+	regex                = `^-?\d+(?:[.,]\d+)?\s\/\s.+$`
 )
 
 func (m *Message) CheckIfIsSystemMessage() bool {
@@ -78,6 +79,18 @@ func (m *Message) IsSetAsZero() bool {
 	}
 
 	if m.Message == setAsZero {
+		return true
+	}
+
+	return false
+}
+
+func (m *Message) IsDetailedDailyBalance() bool {
+	if m.Message == "" {
+		return false
+	}
+
+	if m.Message == detailedDailyMessage {
 		return true
 	}
 
