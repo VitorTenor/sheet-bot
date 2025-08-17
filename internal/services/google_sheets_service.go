@@ -182,9 +182,20 @@ func (gss *GoogleSheetsService) GetDetailedDailyBalance() string {
 		return SystemError
 	}
 
-	if existingNote != "" {
-		return domain.SystemMessagePrefix + " " + existingNote
+	if existingNote == "" {
+		return domain.SystemMessagePrefix + "\n" + existingNote
 	}
 
-	return domain.SystemMessagePrefix + "no detailed daily balance available"
+	if strings.Contains(existingNote, "\n") {
+		notes := strings.Split(existingNote, "\n")
+		var formattedNotes []string
+		for _, note := range notes {
+			formattedNote := domain.SystemMessagePrefix + " " + note
+			formattedNotes = append(formattedNotes, formattedNote)
+		}
+
+		return strings.Join(formattedNotes, "\n")
+	}
+
+	return domain.SystemMessagePrefix + " " + existingNote
 }
