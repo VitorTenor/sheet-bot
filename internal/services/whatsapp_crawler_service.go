@@ -60,6 +60,7 @@ func (wcs *WhatsAppCrawlerService) WhatsAppCrawler() {
 		log.Fatalf("error opening group chat: %v", err)
 	}
 
+	log.Info("whatsApp crawler started successfully")
 	wcs.checkMessages(page)
 }
 
@@ -135,6 +136,7 @@ func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
 }
 
 func (wcs *WhatsAppCrawlerService) checkMessages(page playwright.Page) {
+	log.Info("starting to check messages...")
 	for {
 		if err := wcs.handleMessages(page); err != nil {
 			log.Printf("error handling messages: %v", err)
