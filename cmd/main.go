@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/labstack/gommon/log"
 	"github.com/playwright-community/playwright-go"
@@ -12,7 +13,9 @@ import (
 )
 
 func main() {
+	log.SetOutput(&configuration.LogInterceptor{Writer: os.Stdout})
 	log.Info("starting application...")
+
 	ctx := context.Background()
 
 	err := playwright.Install()
