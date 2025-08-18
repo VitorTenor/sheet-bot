@@ -18,8 +18,9 @@ type ApplicationConfig struct {
 		SheetId     string `yaml:"sheet_id"`
 	} `yaml:"google"`
 	WhatsApp struct {
-		WebURL    string `yaml:"web_url"`
-		GroupName string `yaml:"group_name"`
+		WebURL     string `yaml:"web_url"`
+		GroupName  string `yaml:"group_name"`
+		IsArchived bool   `yaml:"is_archived"`
 	} `yaml:"whatsapp"`
 	Crawler struct {
 		UserDataDir string `yaml:"user_data_dir"`

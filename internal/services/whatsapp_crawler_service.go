@@ -50,6 +50,12 @@ func (wcs *WhatsAppCrawlerService) WhatsAppCrawler() {
 		log.Fatalf("error opening WhatsApp page: %v", err)
 	}
 
+	if wcs.appConfig.WhatsApp.IsArchived {
+		if err = wcs.openArchivedChats(page); err != nil {
+			log.Fatalf("error opening archived chats: %v", err)
+		}
+	}
+
 	if err = wcs.openGroupChat(page); err != nil {
 		log.Fatalf("error opening group chat: %v", err)
 	}
@@ -88,15 +94,33 @@ func (wcs *WhatsAppCrawlerService) openWhatsAppPage(browser playwright.BrowserCo
 		return nil, err
 	}
 
-	_, err = page.WaitForSelector(fmt.Sprintf("text='%s'", wcs.appConfig.WhatsApp.GroupName), playwrightOptions)
-	if err != nil {
-		return nil, err
-	}
-
 	return page, nil
 }
 
+func (wcs *WhatsAppCrawlerService) openArchivedChats(page playwright.Page) error {
+	_, err := page.WaitForSelector(fmt.Sprintf("text='Arquivadas'"), playwrightOptions)
+	if err != nil {
+		return err
+	}
+
+	archivedButton, err := page.QuerySelector("text='Arquivadas'")
+	if err != nil {
+		return err
+	}
+
+	if err := archivedButton.Click(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
+	_, err := page.WaitForSelector(fmt.Sprintf("text='%s'", wcs.appConfig.WhatsApp.GroupName), playwrightOptions)
+	if err != nil {
+		return err
+	}
+
 	sheetBot, err := page.QuerySelector(fmt.Sprintf(`span[title="%s"]`, wcs.appConfig.WhatsApp.GroupName))
 	if err != nil {
 		return err

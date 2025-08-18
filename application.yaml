@@ -7,6 +7,7 @@ google:
 whatsapp:
   web_url: "https://web.whatsapp.com/"
   group_name: "sheet-bot"
+  is_archived: true
 
 crawler:
   user_data_dir: "./user_data"
