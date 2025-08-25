@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -16,7 +17,19 @@ type LogEntry struct {
 }
 
 type LogInterceptor struct {
-	Writer io.Writer
+	Writer    io.Writer
+	AppConfig *ApplicationConfig
+}
+
+const dateFormat = "2006/01/02 15:04:05"
+
+func formatLogEntry(entry LogEntry, groupName string) string {
+	t, err := time.Parse(time.RFC3339Nano, entry.Time)
+	if err != nil {
+		t = time.Now()
+	}
+
+	return fmt.Sprintf("%s %s [%s][%s] %s\n", t.Format(dateFormat), entry.Level, entry.File, strings.ToUpper(groupName), entry.Message)
 }
 
 func (li *LogInterceptor) Write(p []byte) (n int, err error) {
@@ -26,11 +39,6 @@ func (li *LogInterceptor) Write(p []byte) (n int, err error) {
 		return li.Writer.Write(p)
 	}
 
-	t, err := time.Parse(time.RFC3339Nano, entry.Time)
-	if err != nil {
-		t = time.Now()
-	}
-
-	formatted := fmt.Sprintf("%s %s %s\n", t.Format("2006/01/02 15:04:05"), entry.Level, entry.Message)
+	formatted := formatLogEntry(entry, li.AppConfig.WhatsApp.GroupName)
 	return li.Writer.Write([]byte(formatted))
 }

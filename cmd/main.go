@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"os"
 
 	"github.com/labstack/gommon/log"
@@ -9,23 +11,35 @@ import (
 
 	"github.com/vitortenor/sheet-bot/internal/client"
 	"github.com/vitortenor/sheet-bot/internal/configuration"
+	"github.com/vitortenor/sheet-bot/internal/domain"
 	"github.com/vitortenor/sheet-bot/internal/services"
 )
 
 func main() {
-	log.SetOutput(&configuration.LogInterceptor{Writer: os.Stdout})
-	log.Info("starting application...")
-
 	ctx := context.Background()
-
-	err := playwright.Install()
-	if err != nil {
-		log.Error("failed to install playwright: ", err)
-	}
 
 	appConfig, err := configuration.InitConfig(ctx, "application.yaml")
 	if err != nil {
 		log.Fatal("failed to load configuration: ", err)
+	}
+
+	log.SetOutput(&configuration.LogInterceptor{Writer: os.Stdout, AppConfig: appConfig})
+	log.Info("starting application...")
+
+	filePath := appConfig.UserDataFile
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Fatal("failed to read user configuration file: ", err)
+	}
+
+	var whatsappUsers *[]domain.WhatsappUser
+	if err := json.Unmarshal(data, &whatsappUsers); err != nil {
+		log.Fatal("failed to unmarshal user configuration file: ", err)
+	}
+
+	err = playwright.Install()
+	if err != nil {
+		log.Error("failed to install playwright: ", err)
 	}
 
 	googleSrv, err := configuration.BuildGoogleSrv(ctx, appConfig)
@@ -41,7 +55,7 @@ func main() {
 	mis := services.NewMessageInterpreterService()
 	ms := services.NewMessageService(ctx, appConfig, gsc, oas, mis)
 
-	wcs := services.NewWhatsAppCrawlerService(ctx, appConfig, ms)
-	wcs.WhatsAppCrawler()
+	wcs := services.NewWhatsAppCrawlerService(ctx, appConfig, ms, whatsappUsers)
 
+	wcs.WhatsAppCrawler()
 }

@@ -30,6 +30,7 @@ type ApplicationConfig struct {
 		ModelURL  string `yaml:"model_url"`
 		ModelName string `yaml:"model_name"`
 	} `yaml:"ai"`
+	UserDataFile string `yaml:"user_data_file"`
 }
 
 func InitConfig(_ context.Context, path string) (*ApplicationConfig, error) {

@@ -29,8 +29,6 @@ func NewMessageService(ctx context.Context, appConfig *configuration.Application
 }
 
 func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Message {
-	log.Info("processing message")
-
 	if message.CheckIfIsSystemMessage() {
 		return nil
 	}

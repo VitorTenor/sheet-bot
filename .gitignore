@@ -26,4 +26,4 @@ Thumbs.db
 # System files
 credentials.json
 user_data/
-
+user.json

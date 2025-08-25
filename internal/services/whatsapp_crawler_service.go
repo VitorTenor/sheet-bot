@@ -17,13 +17,15 @@ type WhatsAppCrawlerService struct {
 	context        context.Context
 	appConfig      *configuration.ApplicationConfig
 	messageService *MessageService
+	users          *[]domain.WhatsappUser
 }
 
-func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configuration.ApplicationConfig, ms *MessageService) *WhatsAppCrawlerService {
+func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configuration.ApplicationConfig, ms *MessageService, users *[]domain.WhatsappUser) *WhatsAppCrawlerService {
 	return &WhatsAppCrawlerService{
 		context:        ctx,
 		appConfig:      appConfig,
 		messageService: ms,
+		users:          users,
 	}
 }
 
@@ -49,19 +51,22 @@ func (wcs *WhatsAppCrawlerService) WhatsAppCrawler() {
 	if err != nil {
 		log.Fatalf("error opening WhatsApp page: %v", err)
 	}
-
-	if wcs.appConfig.WhatsApp.IsArchived {
-		if err = wcs.openArchivedChats(page); err != nil {
-			log.Fatalf("error opening archived chats: %v", err)
+	for {
+		for _, user := range *wcs.users {
+			if user.IsArchived {
+				log.Info("archived chats isn't available, skipping...")
+				continue
+			}
+			wcs.appConfig.WhatsApp.GroupName = user.GroupName
+			wcs.appConfig.Google.SheetId = user.SheetId
+			if err := wcs.openGroupChat(page); err != nil {
+				log.Error("error opening group chat: %v", err)
+				continue
+			}
+			wcs.checkMessages(page)
 		}
+		time.Sleep(interval)
 	}
-
-	if err = wcs.openGroupChat(page); err != nil {
-		log.Fatalf("error opening group chat: %v", err)
-	}
-
-	log.Info("whatsApp crawler started successfully")
-	wcs.checkMessages(page)
 }
 
 func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, error) {
@@ -136,12 +141,8 @@ func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
 }
 
 func (wcs *WhatsAppCrawlerService) checkMessages(page playwright.Page) {
-	log.Info("starting to check messages...")
-	for {
-		if err := wcs.handleMessages(page); err != nil {
-			log.Printf("error handling messages: %v", err)
-		}
-		time.Sleep(interval)
+	if err := wcs.handleMessages(page); err != nil {
+		log.Printf("error handling messages: %v", err)
 	}
 }
 
@@ -165,7 +166,6 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 	}
 
 	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) && strings.TrimSpace(messagesText[messageTextSize-1]) != "" {
-		log.Info("processing messages...")
 		var messagesToSave []string
 		counter := 1
 
@@ -179,16 +179,15 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 				Message: message,
 			}
 
+			fmt.Print("\n")
 			log.Info("processing message: ", domainMessage.Message)
 			response := wcs.messageService.ProcessAndReply(domainMessage)
 			err := wcs.typeAndSend(page, response.Message)
 			log.Info("message processed: ", response.Message)
-
 			if err != nil {
 				return err
 			}
 		}
-		log.Info("messages processed")
 	}
 	return nil
 }

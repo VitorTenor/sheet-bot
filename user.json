@@ -1,0 +1,12 @@
+[
+  {
+    "groupName": "sheet-bot-test-1",
+    "isArchived": false,
+    "sheetId": "123"
+  },
+  {
+    "groupName": "sheet-bot-test-2",
+    "isArchived": false,
+    "sheetId": "1234"
+  }
+]
