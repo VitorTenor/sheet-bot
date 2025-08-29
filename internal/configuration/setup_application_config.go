@@ -24,7 +24,6 @@ type ApplicationConfig struct {
 	} `yaml:"whatsapp"`
 	Crawler struct {
 		UserDataDir string `yaml:"user_data_dir"`
-		Headless    bool   `yaml:"headless"`
 	} `yaml:"crawler"`
 	Ai struct {
 		IsEnabled bool   `yaml:"is_enabled"`

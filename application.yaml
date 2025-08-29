@@ -6,14 +6,15 @@ google:
 
 whatsapp:
   web_url: "https://web.whatsapp.com/"
-  group_name: "sheet-bot-test"
-  is_archived: false
+  group_name: "sheet-bot"
+  is_archived: true
 
 crawler:
   user_data_dir: "./user_data"
-  headless: true
 
 ai:
-  is_enabled: false
+  is_enabled: true
   model_url: "http://127.0.0.1:11434/api/generate"
   model_name: "llama3.2"
+
+
