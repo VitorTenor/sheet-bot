@@ -2,11 +2,10 @@ package services
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"strings"
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"github.com/playwright-community/playwright-go"
 
 	"github.com/vitortenor/sheet-bot/internal/configuration"
@@ -27,41 +26,44 @@ func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configuration.App
 	}
 }
 
-const (
-	interval = 2 * time.Second
-)
+const interval = 2 * time.Second
 
-var (
-	playwrightTimeout = playwright.Float(3600000) // 1 hour timeout for playwright operations
-	playwrightOptions = playwright.PageWaitForSelectorOptions{
-		Timeout: playwrightTimeout,
-	}
-)
+var playwrightTimeout = playwright.Float(3600000) // 1 hour timeout
 
 func (wcs *WhatsAppCrawlerService) WhatsAppCrawler() {
+	// Launch browser
 	browser, err := wcs.launchBrowser()
 	if err != nil {
 		log.Fatalf("error launching browser: %v", err)
 	}
 	defer browser.Close()
 
+	// Open WhatsApp Web page
 	page, err := wcs.openWhatsAppPage(browser)
 	if err != nil {
 		log.Fatalf("error opening WhatsApp page: %v", err)
 	}
 
+	// Open archived chats if configured
 	if wcs.appConfig.WhatsApp.IsArchived {
 		if err = wcs.openArchivedChats(page); err != nil {
 			log.Fatalf("error opening archived chats: %v", err)
 		}
 	}
 
+	// Open group chat
 	if err = wcs.openGroupChat(page); err != nil {
 		log.Fatalf("error opening group chat: %v", err)
 	}
 
-	log.Info("whatsApp crawler started successfully")
-	wcs.checkMessages(page)
+	log.Println("WhatsApp crawler started successfully")
+
+	// Choose method based on headless config
+	if wcs.appConfig.Crawler.Headless {
+		wcs.checkMessagesHeadless(page)
+	} else {
+		wcs.checkMessagesNonHeadless(page)
+	}
 }
 
 func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, error) {
@@ -70,11 +72,14 @@ func (wcs *WhatsAppCrawlerService) launchBrowser() (playwright.BrowserContext, e
 		return nil, err
 	}
 
-	browserContext, err := pw.Chromium.LaunchPersistentContext(wcs.appConfig.Crawler.UserDataDir, playwright.BrowserTypeLaunchPersistentContextOptions{
-		Channel:  playwright.String("chrome"),
-		Headless: playwright.Bool(false),
-		Timeout:  playwrightTimeout,
-	})
+	browserContext, err := pw.Chromium.LaunchPersistentContext(
+		wcs.appConfig.Crawler.UserDataDir,
+		playwright.BrowserTypeLaunchPersistentContextOptions{
+			Channel:  playwright.String("chrome"),
+			Headless: playwright.Bool(wcs.appConfig.Crawler.Headless),
+			Timeout:  playwrightTimeout,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +104,8 @@ func (wcs *WhatsAppCrawlerService) openWhatsAppPage(browser playwright.BrowserCo
 }
 
 func (wcs *WhatsAppCrawlerService) openArchivedChats(page playwright.Page) error {
-	_, err := page.WaitForSelector(fmt.Sprintf("text='Arquivadas'"), playwrightOptions)
+	// Wait for "Archived" button and click it
+	_, err := page.WaitForSelector("text='Arquivadas'", playwright.PageWaitForSelectorOptions{Timeout: playwrightTimeout})
 	if err != nil {
 		return err
 	}
@@ -109,127 +115,116 @@ func (wcs *WhatsAppCrawlerService) openArchivedChats(page playwright.Page) error
 		return err
 	}
 
-	if err := archivedButton.Click(); err != nil {
-		return err
-	}
-
-	return nil
+	return archivedButton.Click()
 }
 
 func (wcs *WhatsAppCrawlerService) openGroupChat(page playwright.Page) error {
-	_, err := page.WaitForSelector(fmt.Sprintf("text='%s'", wcs.appConfig.WhatsApp.GroupName), playwrightOptions)
+	// Wait for group name and click
+	_, err := page.WaitForSelector("text='"+wcs.appConfig.WhatsApp.GroupName+"'", playwright.PageWaitForSelectorOptions{Timeout: playwrightTimeout})
 	if err != nil {
 		return err
 	}
 
-	sheetBot, err := page.QuerySelector(fmt.Sprintf(`span[title="%s"]`, wcs.appConfig.WhatsApp.GroupName))
+	chat, err := page.QuerySelector(`span[title="` + wcs.appConfig.WhatsApp.GroupName + `"]`)
 	if err != nil {
 		return err
 	}
 
-	if err := sheetBot.Click(); err != nil {
+	if err := chat.Click(); err != nil {
 		return err
 	}
 
-	_, err = page.WaitForSelector(".x10l6tqk", playwrightOptions)
+	// Wait for messages container
+	_, err = page.WaitForSelector(".x10l6tqk", playwright.PageWaitForSelectorOptions{Timeout: playwrightTimeout})
 	return err
 }
 
-func (wcs *WhatsAppCrawlerService) checkMessages(page playwright.Page) {
-	log.Info("starting to check messages...")
+// ---------- HEADLESS: real-time message capture ----------
+func (wcs *WhatsAppCrawlerService) checkMessagesHeadless(page playwright.Page) {
+	// Set up MutationObserver to track only the last message
+	_, err := page.Evaluate(`
+        window.lastMessage = null;
+        const targetNode = document.querySelector('#main');
+        const config = { childList: true, subtree: true };
+        const callback = (mutationsList) => {
+            mutationsList.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if(!node.querySelector) return;
+                    const span = node.querySelector('.selectable-text.copyable-text span');
+                    if(span){
+                        window.lastMessage = span.textContent;
+                    }
+                });
+            });
+        };
+        const observer = new MutationObserver(callback);
+        observer.observe(targetNode, config);
+    `)
+	if err != nil {
+		log.Fatalf("failed to set up mutation observer: %v", err)
+	}
+
+	// Infinite loop to process new messages
 	for {
-		if err := wcs.handleMessages(page); err != nil {
-			log.Printf("error handling messages: %v", err)
+		lastMsgRaw, err := page.Evaluate(`window.lastMessage`)
+		if err != nil {
+			log.Printf("error evaluating last message: %v", err)
+			time.Sleep(interval)
+			continue
 		}
+
+		if lastMsg, ok := lastMsgRaw.(string); ok && lastMsg != "" {
+			// Skip messages starting with "sys:"
+			if !strings.HasPrefix(lastMsg, "sys:") {
+				domainMsg := &domain.Message{Message: lastMsg}
+				response := wcs.messageService.ProcessAndReply(domainMsg)
+				if err := wcs.typeAndSend(page, response.Message); err != nil {
+					log.Printf("error sending message: %v", err)
+				}
+			}
+			// Reset lastMessage to avoid reprocessing
+			_, _ = page.Evaluate(`window.lastMessage = null`)
+		}
+
 		time.Sleep(interval)
 	}
 }
 
-func (wcs *WhatsAppCrawlerService) handleMessages(page playwright.Page) error {
-	messagesText, err := wcs.getMessagesText(page)
-	if err != nil {
-		return fmt.Errorf("error getting messages text: %w", err)
-	}
-
-	if err := wcs.processMessages(page, messagesText); err != nil {
-		return fmt.Errorf("error processing messages: %w", err)
-	}
-
-	return nil
-}
-
-func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, messagesText []string) error {
-	messageTextSize := len(messagesText)
-	if messageTextSize == 0 {
-		return nil
-	}
-
-	if !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-1]) && strings.TrimSpace(messagesText[messageTextSize-1]) != "" {
-		log.Info("processing messages...")
-		var messagesToSave []string
-		counter := 1
-
-		for messageTextSize-counter >= 0 && !wcs.checkIfIsSystemMessage(messagesText[messageTextSize-counter]) {
-			messagesToSave = append(messagesToSave, messagesText[messageTextSize-counter])
-			counter++
-		}
-
-		for _, message := range messagesToSave {
-			domainMessage := &domain.Message{
-				Message: message,
-			}
-
-			log.Info("processing message: ", domainMessage.Message)
-			response := wcs.messageService.ProcessAndReply(domainMessage)
-			err := wcs.typeAndSend(page, response.Message)
-			log.Info("message processed: ", response.Message)
-
-			if err != nil {
-				return err
-			}
-		}
-		log.Info("messages processed")
-	}
-	return nil
-}
-
-func (wcs *WhatsAppCrawlerService) getMessagesText(page playwright.Page) ([]string, error) {
-	mainDiv, err := page.QuerySelector(`#main`)
-	if err != nil {
-		return nil, err
-	}
-
-	children, err := mainDiv.QuerySelectorAll(".selectable-text.copyable-text span")
-	if err != nil {
-		return nil, err
-	}
-
-	var messagesText []string
-	for _, child := range children {
-		hasLexicalAttr, err := child.GetAttribute("data-lexical-text")
-		if err == nil && hasLexicalAttr == "true" {
+// ---------- NON-HEADLESS: polling the last message ----------
+func (wcs *WhatsAppCrawlerService) checkMessagesNonHeadless(page playwright.Page) {
+	for {
+		// Get the last message from the chat
+		lastMsg, err := page.Evaluate(`(() => {
+			const spans = document.querySelectorAll('#main .selectable-text.copyable-text span');
+			if(spans.length === 0) return '';
+			return spans[spans.length -1].textContent;
+		})()`)
+		if err != nil {
+			log.Printf("error getting last message: %v", err)
+			time.Sleep(interval)
 			continue
 		}
-		messageText, err := child.TextContent()
-		if err != nil {
-			return nil, err
+
+		// Skip messages starting with "sys:"
+		if msgStr, ok := lastMsg.(string); ok && msgStr != "" && !strings.HasPrefix(msgStr, "sys:") {
+			domainMsg := &domain.Message{Message: msgStr}
+			response := wcs.messageService.ProcessAndReply(domainMsg)
+			if err := wcs.typeAndSend(page, response.Message); err != nil {
+				log.Printf("error sending message: %v", err)
+			}
 		}
-		messagesText = append(messagesText, messageText)
+
+		time.Sleep(interval)
 	}
-	return messagesText, nil
 }
 
 func (wcs *WhatsAppCrawlerService) typeAndSend(page playwright.Page, message string) error {
-	messageBox, err := page.QuerySelector(`div[aria-label="Digite uma mensagem"]`)
+	msgBox, err := page.QuerySelector(`div[aria-label="Digite uma mensagem"]`)
 	if err != nil {
 		return err
 	}
-	if err := messageBox.Type(message); err != nil {
+	if err := msgBox.Type(message); err != nil {
 		return err
 	}
 	return page.Keyboard().Press("Enter")
-}
-
-func (wcs *WhatsAppCrawlerService) checkIfIsSystemMessage(message string) bool {
-	return strings.HasPrefix(message, domain.SystemMessagePrefix)
 }

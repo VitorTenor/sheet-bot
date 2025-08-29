@@ -42,6 +42,8 @@ func main() {
 	ms := services.NewMessageService(ctx, appConfig, gsc, oas, mis)
 
 	wcs := services.NewWhatsAppCrawlerService(ctx, appConfig, ms)
+
+	log.Info("starting WhatsApp crawler...")
 	wcs.WhatsAppCrawler()
 
 }
