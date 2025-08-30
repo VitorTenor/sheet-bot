@@ -219,8 +219,10 @@ func (wcs *WhatsAppCrawlerService) getMessagesText(page playwright.Page) ([]stri
 	return messagesText, nil
 }
 
+//<div aria-activedescendant="" aria-autocomplete="list" aria-label="Type to group rich_bibous" aria-owns="emoji-suggestion" class="x1hx0egp x6ikm8r x1odjw0f x1k6rcq7 x6prxxf" contenteditable="true" role="textbox" spellcheck="true" tabindex="10" aria-placeholder="Digite uma mensagem" data-tab="10" data-lexical-editor="true" style="max-height: 11.76em; min-height: 1.47em; user-select: text; white-space: pre-wrap; word-break: break-word;"><p class="selectable-text copyable-text x15bjb6t x1n2onr6" dir="auto"><br></p></div>
+
 func (wcs *WhatsAppCrawlerService) typeAndSend(page playwright.Page, message string) error {
-	messageBox, err := page.QuerySelector(`div[aria-label="Digite uma mensagem"]`)
+	messageBox, err := page.QuerySelector(`div[contenteditable="true"][data-tab="10"]`)
 	if err != nil {
 		return err
 	}
