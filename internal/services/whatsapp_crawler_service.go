@@ -28,7 +28,7 @@ func NewWhatsAppCrawlerService(ctx context.Context, appConfig *configuration.App
 }
 
 const (
-	interval = 2 * time.Second
+	interval = time.Second / 2 // Check for new messages every 0.5 seconds
 )
 
 var (
@@ -194,7 +194,7 @@ func (wcs *WhatsAppCrawlerService) processMessages(page playwright.Page, message
 }
 
 func (wcs *WhatsAppCrawlerService) getMessagesText(page playwright.Page) ([]string, error) {
-	mainDiv, err := page.QuerySelector(`#main`)
+	mainDiv, err := page.QuerySelector(`div[id*="main"]`)
 	if err != nil {
 		return nil, err
 	}
