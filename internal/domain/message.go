@@ -20,6 +20,7 @@ const (
 	detailedDailyMessage = "notas"
 	dailyBalance         = "saldo"
 	setAsZero            = "zerar"
+	sysDailyReminder     = "sysdailyreminder"
 	regex                = `^-?\d+(?:[.,]\d+)?\s\/\s.+$`
 )
 
@@ -91,6 +92,18 @@ func (m *Message) IsDetailedDailyBalance() bool {
 	}
 
 	if m.Message == detailedDailyMessage {
+		return true
+	}
+
+	return false
+}
+
+func (m *Message) IsReminderVerification() bool {
+	if m.Message == "" {
+		return false
+	}
+
+	if m.Message == sysDailyReminder {
 		return true
 	}
 

@@ -103,6 +103,65 @@ func (gss *GoogleSheetsService) ProcessAndUpdateSheet(inputValue string) string 
 	return domain.SystemMessagePrefix + "processed " + inputValue
 }
 
+func (gss *GoogleSheetsService) GetDetailedDailyBalance() string {
+	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
+	if err != nil {
+		return SystemError
+	}
+
+	existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, utils.BuildDailyOutcomeRange())
+	if err != nil {
+		return SystemError
+	}
+
+	if existingNote == "" {
+		return domain.SystemMessagePrefix + "\n" + existingNote
+	}
+
+	if strings.Contains(existingNote, "\n") {
+		notes := strings.Split(existingNote, "\n")
+		var formattedNotes []string
+		for _, note := range notes {
+			formattedNote := domain.SystemMessagePrefix + " " + note
+			formattedNotes = append(formattedNotes, formattedNote)
+		}
+
+		return strings.Join(formattedNotes, "\n")
+	}
+
+	return domain.SystemMessagePrefix + " " + existingNote
+}
+
+func (gss *GoogleSheetsService) GetDailyReminder() string {
+	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
+	if err != nil {
+		return SystemError
+	}
+
+	existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, utils.BuildDailyOutcomeRange())
+	if err != nil {
+		return SystemError
+	}
+
+	if existingNote != "" {
+		return domain.InvalidMessage
+	}
+
+	response, err := gss.client.GetValue(gss.appConfig.Google.SheetId, utils.BuildDailyOutcomeRange())
+	if err != nil {
+		return SystemError
+	}
+
+	if len(response.Values) > 0 && len(response.Values[0]) > 0 {
+		currentValue := utils.CleanMoneyValue(response.Values[0][0].(string))
+		if currentValue != "0.00" {
+			return domain.SystemMessagePrefix + "you haven’t added any expenses today. Log them or set to zero if none."
+		}
+	}
+
+	return domain.InvalidMessage
+}
+
 func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputValue string) error {
 	value, err := strconv.ParseFloat(strings.TrimSpace(strings.Split(inputValue, "/")[0]), 64)
 	if err != nil {
@@ -169,33 +228,4 @@ func (gss *GoogleSheetsService) updateSheetValuesAndNotes(sheetId int64, inputVa
 	}
 
 	return nil
-}
-
-func (gss *GoogleSheetsService) GetDetailedDailyBalance() string {
-	sheetId, err := gss.client.GetSheetId(gss.appConfig.Google.SheetId, strconv.Itoa(utils.GetCurrentYear()))
-	if err != nil {
-		return SystemError
-	}
-
-	existingNote, err := gss.client.GetNote(gss.appConfig.Google.SheetId, sheetId, utils.BuildDailyOutcomeRange())
-	if err != nil {
-		return SystemError
-	}
-
-	if existingNote == "" {
-		return domain.SystemMessagePrefix + "\n" + existingNote
-	}
-
-	if strings.Contains(existingNote, "\n") {
-		notes := strings.Split(existingNote, "\n")
-		var formattedNotes []string
-		for _, note := range notes {
-			formattedNote := domain.SystemMessagePrefix + " " + note
-			formattedNotes = append(formattedNotes, formattedNote)
-		}
-
-		return strings.Join(formattedNotes, "\n")
-	}
-
-	return domain.SystemMessagePrefix + " " + existingNote
 }

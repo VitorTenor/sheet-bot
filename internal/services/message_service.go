@@ -77,6 +77,10 @@ func (ms *MessageService) ProcessAndReply(message *domain.Message) *domain.Messa
 		log.Info("processing set as zero message")
 		return ms.newReply(ms.sheetService.SetDailyAsZero())
 
+	case message.IsReminderVerification():
+		log.Info("processing reminder verification message")
+		return ms.newReply(ms.sheetService.GetDailyReminder())
+
 	default:
 		return ms.newReply(domain.InvalidMessage + ": " + message.Message)
 	}
